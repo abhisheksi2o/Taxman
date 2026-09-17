@@ -1,0 +1,46 @@
+# Render Blueprint – deploys the API and the web app as two free web services.
+# Deploy button: https://render.com/deploy?repo=https://github.com/abhisheksi2o/Taxman
+# The free tier has no persistent disk: demo data lives on the instance until it restarts, which is fine for
+# trying the prototype. For real use attach a disk or a PostgreSQL database and set DATABASE_URL.
+services:
+  - type: web
+    name: astra-tax-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: ASTRA_ENV
+        value: development
+      - key: ASTRA_DEMO_MODE
+        value: "true"
+      - key: ASTRA_DEV_MODE
+        value: "true"
+      - key: ASTRA_COOKIE_SECURE
+        value: "false"
+      - key: ASTRA_ENCRYPTION_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////data/astra.db
+      - key: ASTRA_STORAGE_DIR
+        value: /data/documents
+      - key: ASTRA_ALLOWED_ORIGINS
+        value: https://astra-tax-web.onrender.com
+      - key: ANTHROPIC_API_KEY
+        sync: false
+  - type: web
+    name: astra-tax-web
+    runtime: docker
+    rootDir: frontend
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: astra-tax-api
+          property: hostport

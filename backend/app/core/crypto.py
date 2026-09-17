@@ -36,12 +36,27 @@ class Encryptor:
         return self.decrypt(token).decode("utf-8")
 
 
+def fernet_key_from_secret(secret: str) -> bytes:
+    """Accept either a real Fernet key (32 url-safe base64 bytes) or any secret string, which is stretched
+    into a Fernet key with SHA-256. Lets hosting platforms inject a generated random secret."""
+    import base64
+    import hashlib
+
+    raw = secret.strip().encode()
+    try:
+        if len(base64.urlsafe_b64decode(raw + b"=" * (-len(raw) % 4))) == 32 and len(raw) in (43, 44):
+            return raw if raw.endswith(b"=") else raw + b"="
+    except Exception:  # noqa: BLE001 – fall through to derivation
+        pass
+    return base64.urlsafe_b64encode(hashlib.sha256(raw).digest())
+
+
 @lru_cache
 def get_encryptor() -> Encryptor:
     settings = get_settings()
     key = settings.astra_encryption_key
     if key:
-        return Encryptor(key.encode())
+        return Encryptor(fernet_key_from_secret(key))
     if settings.is_production:
         raise RuntimeError("ASTRA_ENCRYPTION_KEY must be set in production")
     key_file = settings.data_dir / ".dev-encryption-key"

@@ -23,6 +23,15 @@ discrepancies, explains, and orchestrates — and every AI conclusion is checked
 | **Synthetic data + evaluation** | 12 coherent demo scenarios with hidden issues; benchmark of detection, evidence, impact accuracy, hallucination | `backend/app/synthetic/`, `backend/app/evaluation/` |
 | **Web app** | Dashboard · My Tax Profile · Documents · Reconciliation · Tax Computation · Issues & Alerts · Ask Astra · Return Review (+ Audit trail, AI Evaluation) | `frontend/` |
 
+## Open it with one click
+
+| | |
+|---|---|
+| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/abhisheksi2o/Taxman?quickstart=1) | **Run the real app in your browser, nothing to install.** Creates a Codespace on your GitHub account, installs both services and opens the app on the forwarded port 3000 (about 3–5 minutes the first time). Then click *Continue with a demo workspace* → *Generate demo taxpayer*. |
+| [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/abhisheksi2o/Taxman) | **Get a permanent public URL.** Uses `render.yaml` to create the API and web services on Render's free tier under your Render account (first build ≈ 5 minutes; free instances sleep when idle and keep demo data only until they restart). |
+
+Both options run the code in this repository unchanged; the only difference is where it runs.
+
 ## Quick start
 
 ```bash

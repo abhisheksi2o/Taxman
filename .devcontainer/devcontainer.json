@@ -1,0 +1,23 @@
+{
+  "name": "ASTRA Tax",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "forwardPorts": [3000, 8000],
+  "portsAttributes": {
+    "3000": { "label": "ASTRA Tax app", "onAutoForward": "openBrowser" },
+    "8000": { "label": "ASTRA Tax API", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "bradlc.vscode-tailwindcss"]
+    },
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  }
+}
