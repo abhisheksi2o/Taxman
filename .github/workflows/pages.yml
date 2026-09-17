@@ -1,5 +1,13 @@
 name: Deploy to GitHub Pages
 
+# Builds the in-browser edition (Next.js static export + the Python engine
+# running in a Web Worker via Pyodide) and publishes it to GitHub Pages.
+#
+# One-time repository setting (an admin has to do this once, a token cannot):
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# Until that is done the build still runs, but the deploy job is skipped and
+# the run summary explains what to switch on.
+
 on:
   push:
     branches: ["claude/taxman-ai-tax-agent-vcghhd", "main"]
@@ -17,6 +25,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages_enabled: ${{ steps.pages.outputs.enabled }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,16 +47,44 @@ jobs:
           python -m pytest -q
       - name: Build static site
         run: BASE_PATH=/${{ github.event.repository.name }} bash scripts/build-static.sh
+      - name: Check whether GitHub Pages is switched on
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          enabled="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.has_pages' || echo unknown)"
+          echo "has_pages=${enabled}"
+          echo "enabled=${enabled}" >> "$GITHUB_OUTPUT"
+          site_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+          if [ "${enabled}" = "true" ]; then
+            echo "## Publishing to ${site_url}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            settings_url="https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+            echo "::warning title=GitHub Pages is not switched on yet::The site was built but cannot be published until Pages is enabled once: ${settings_url} → Build and deployment → Source: GitHub Actions. Then re-run this workflow."
+            {
+              echo "## GitHub Pages is not switched on yet"
+              echo
+              echo "The site was built successfully, but GitHub only lets a repository admin enable Pages, so this run cannot publish it."
+              echo
+              echo "**One-time setup (about 10 seconds):**"
+              echo
+              echo "1. Open **${settings_url}**"
+              echo "2. Under **Build and deployment → Source**, choose **GitHub Actions**"
+              echo "3. Re-run this workflow (Actions → Deploy to GitHub Pages → Run workflow)"
+              echo
+              echo "After that every push publishes automatically and the app is live at **${site_url}**"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-        continue-on-error: true
+        if: steps.pages.outputs.enabled == 'true'
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/out
 
   deploy:
     needs: build
+    if: needs.build.outputs.pages_enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -33,6 +33,10 @@ is uploaded anywhere: your workspace lives in the browser's IndexedDB on this de
 about 15 MB of runtime; later visits are cached. Astra's Claude-powered mode is server-only, so the hosted edition
 always answers in deterministic mode. It is published by `.github/workflows/pages.yml` on every push.
 
+> **Seeing a GitHub 404 at that link?** Pages has not been switched on for this repository yet — GitHub only lets a
+> repository admin do that, once: **Settings → Pages → Build and deployment → Source: GitHub Actions**, then
+> re-run *Deploy to GitHub Pages* under **Actions** (or push any commit). From then on every push publishes automatically.
+
 ## Other one-click options
 
 | | |
