@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { AlertTriangle, Bot, Calculator, ClipboardCheck, FileText, FlaskConical, History, LayoutDashboard, LogOut, Menu, Moon, Scale, Sun, UserRound, X } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { STATIC_MODE } from "@/lib/api";
+import { BootStatus, onBootStatus } from "@/lib/localBackend";
 import { Badge, Skeleton } from "./ui";
 
 const NAV = [
@@ -39,18 +41,39 @@ function useTheme() {
   return { theme, toggle };
 }
 
+function BootScreen({ status }: { status: BootStatus }) {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-bg px-6">
+      <div className="card w-full max-w-md p-7 text-center">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-brand text-brand-fg font-bold">A</div>
+        <h1 className="mt-4 text-lg font-semibold">Starting the in-browser tax engine</h1>
+        <p className="mt-1 text-sm text-muted">This build runs the Python tax engine inside your browser (Pyodide). The first load downloads about 15 MB; later visits are cached.</p>
+        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-surface-2"><div className={`h-full rounded-full bg-brand ${status.error ? "w-full bg-danger" : "w-2/3 animate-pulse-soft"}`} /></div>
+        <p className={`mt-3 text-xs ${status.error ? "text-danger" : "text-muted"}`}>{status.message}</p>
+        {status.error && <p className="mt-2 text-xs text-muted">Try reloading the page. If it keeps failing, your browser may block Web Workers or the CDN that serves Pyodide.</p>}
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, cases, activeCaseId, setActiveCase, logout, touch } = useApp();
+  const [boot, setBoot] = useState<BootStatus>({ stage: "idle", message: "Starting…", ready: !STATIC_MODE });
+  useEffect(() => {
+    if (STATIC_MODE) return onBootStatus(setBoot);
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { toggle } = useTheme();
-  const isPublic = pathname === "/login";
+  const route = (pathname || "/").replace(/\/+$/, "") || "/";
+  const isPublic = route === "/login";
 
   useEffect(() => {
     if (!loading && !user && !isPublic) router.replace("/login");
   }, [loading, user, isPublic, router]);
 
+  if (STATIC_MODE && !boot.ready) return <BootScreen status={boot} />;
   if (isPublic) return <>{children}</>;
   if (loading || !user) {
     return <div className="mx-auto max-w-5xl space-y-4 p-6"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-40" /><Skeleton className="h-64" /></div>;
@@ -70,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <nav className="scrollbar-thin flex-1 space-y-0.5 overflow-y-auto px-3">
         {nav.map((n) => {
-          const current = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+          const current = n.href === "/" ? route === "/" : route.startsWith(n.href);
           const Icon = n.icon;
           return (
             <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className={clsx("flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors", current ? "bg-brand-soft font-medium text-brand" : "text-fg/80 hover:bg-surface-2")}>
@@ -107,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {active?.demo_scenario && <Badge tone="warning" className="hidden sm:inline-flex" title="Synthetic data – not a real taxpayer">Demo · {active.demo_scenario.replace(/_/g, " ")}</Badge>}
           <div className="ml-auto hidden items-center gap-2 text-xs text-muted md:flex">
             <span className={clsx("h-2 w-2 rounded-full", user.llm_enabled ? "bg-positive" : "bg-warning")} />
-            {user.llm_enabled ? "Astra: Claude + deterministic engine" : "Astra: deterministic mode (no LLM key)"}
+            {STATIC_MODE ? "In-browser engine · data stays on this device" : user.llm_enabled ? "Astra: Claude + deterministic engine" : "Astra: deterministic mode (no LLM key)"}
           </div>
         </header>
         <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-hidden px-4 py-6 lg:px-8">{children}</main>

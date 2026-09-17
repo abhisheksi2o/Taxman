@@ -8,9 +8,9 @@ from app.ai.astra import ask
 from app.api.deps import developer_user, get_repo
 from app.db.models import User
 from app.db.repository import CaseRepository
-from app.evaluation.runner import evaluate_all, item_matches
+from app.evaluation.runner import evaluate_all
+from app.services.eval_service import hidden_test_rows
 from app.synthetic.generator import list_scenarios
-from app.synthetic.scenarios import HiddenIssue
 from app.tax_engine.rules import CURRENT_ASSESSMENT_YEAR
 
 router = APIRouter(prefix="/dev/evaluation", tags=["evaluation"])
@@ -55,10 +55,4 @@ def case_hidden_test(case_id: str, user: User = Depends(developer_user), repo: C
     hidden = repo.get_hidden_test(case_id, user.id)
     if case is None or hidden is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No hidden test for this case")
-    rows = []
-    for h in hidden.get("hidden_issues", []):
-        hi = HiddenIssue(**{k: v for k, v in h.items() if k != "fix"})
-        hit = next((i for i in case.reconciliation_items if item_matches(hi, i)), None)
-        rows.append({**h, "detected": hit is not None, "detected_item": ({"id": hit.id, "title": hit.title, "status": hit.status, "impact": float(hit.impact_estimate) if hit.impact_estimate is not None else None,
-                                                                          "evidence": [e.label for e in hit.evidence]} if hit else None)})
-    return {**{k: v for k, v in hidden.items() if k != "hidden_issues"}, "hidden_issues": rows}
+    return hidden_test_rows(case, hidden)

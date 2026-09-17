@@ -6,13 +6,33 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
+try:  # server: full settings with .env support
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+
+    _SETTINGS_CONFIG = SettingsConfigDict(env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
+except ImportError:  # browser build (Pyodide): plain pydantic model fed from os.environ
+    import os
+
+    from pydantic import BaseModel, ConfigDict
+
+    _SETTINGS_CONFIG = ConfigDict(extra="ignore", populate_by_name=True)
+
+    class BaseSettings(BaseModel):  # type: ignore[no-redef]
+        def __init__(self, **values):
+            env = {}
+            for name, field in self.model_fields.items():
+                for key in {name, name.upper(), field.alias or name}:
+                    if key and key in os.environ:
+                        env[name] = os.environ[key]
+                        break
+            super().__init__(**{**env, **values})
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = _SETTINGS_CONFIG
 
     astra_env: Literal["development", "production"] = "development"
     astra_encryption_key: str | None = None

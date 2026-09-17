@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Sparkles } from "lucide-react";
-import { Api, ApiError } from "@/lib/api";
+import { Api, ApiError, STATIC_MODE } from "@/lib/api";
 import { useApp } from "@/lib/store";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
@@ -59,8 +59,9 @@ export default function LoginPage() {
             <p className="text-sm text-muted">Your data is encrypted at rest and never leaves your workspace.</p>
           </div>
           {health?.demo_mode && (
-            <Button className="w-full" onClick={() => run(() => Api.demoLogin())} loading={busy}><Sparkles size={16} /> Continue with a demo workspace</Button>
+            <Button className="w-full" onClick={() => run(() => Api.demoLogin())} loading={busy}><Sparkles size={16} /> {STATIC_MODE ? "Open my workspace" : "Continue with a demo workspace"}</Button>
           )}
+          {STATIC_MODE && <p className="mt-3 text-xs text-muted">This hosted build keeps everything in your browser: no account, no server, nothing uploaded anywhere. Clearing site data resets it.</p>}
           <div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />or use an account<span className="h-px flex-1 bg-line" /></div>
           <div className="mb-4 flex rounded-lg border border-line p-1 text-sm">
             {(["login", "register"] as const).map((m) => <button key={m} onClick={() => setMode(m)} className={`flex-1 rounded-md py-1.5 ${mode === m ? "bg-brand-soft text-brand font-medium" : "text-muted"}`}>{m === "login" ? "Sign in" : "Create account"}</button>)}

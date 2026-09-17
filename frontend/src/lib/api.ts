@@ -12,7 +12,31 @@ export class ApiError extends Error {
 
 type Init = Omit<RequestInit, "body"> & { json?: unknown; form?: FormData; body?: BodyInit | null };
 
+import { isStaticMode, localRequest } from "./localBackend";
+
+export const STATIC_MODE = isStaticMode();
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+async function staticApi<T>(path: string, init: Init): Promise<T> {
+  const method = (init.method || "GET").toUpperCase();
+  let file: { name: string; type: string; bytes: ArrayBuffer } | undefined;
+  let body: unknown = init.json;
+  if (init.form) {
+    const f = init.form.get("file") as File | null;
+    if (f) file = { name: f.name, type: f.type, bytes: await f.arrayBuffer() };
+    const t = init.form.get("document_type");
+    body = { document_type: t ? String(t) : null };
+  }
+  const res = await localRequest(method, path, body, file);
+  if (res.status >= 400) {
+    const d = res.body?.detail;
+    throw new ApiError(res.status, typeof d === "string" ? d : d ? JSON.stringify(d) : `Error ${res.status}`, res.body);
+  }
+  return res.body as T;
+}
+
 export async function api<T = any>(path: string, init: Init = {}): Promise<T> {
+  if (STATIC_MODE) return staticApi<T>(path, init);
   const headers: Record<string, string> = { "x-astra-client": "web", ...((init.headers as Record<string, string>) || {}) };
   let body: BodyInit | null | undefined = init.body;
   if (init.json !== undefined) {
@@ -89,6 +113,23 @@ export const Api = {
   confirmReview: (id: string, declarations: Record<string, boolean>, selected_regime: string, acknowledge_open_issues: boolean) =>
     api(`/cases/${id}/review/confirm`, { method: "POST", json: { declarations, selected_regime, acknowledge_open_issues } }),
   resetReview: (id: string) => api(`/cases/${id}/review/reset`, { method: "POST" }),
+  /** Downloads the confirmed return package; in static mode the JSON comes from the in-browser engine. */
+  downloadPackage: async (id: string) => {
+    if (!STATIC_MODE) {
+      window.open(`${BASE_PATH}/api/cases/${id}/review/package`, "_blank");
+      return;
+    }
+    const pkg = await api<{ __blob__: boolean; filename: string; content: string }>(`/cases/${id}/review/package`);
+    const blob = new Blob([pkg.content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pkg.filename || "astra-return.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
   audit: (id: string) => api(`/cases/${id}/audit`),
 
   demoScenarios: () => api("/demo/scenarios"),

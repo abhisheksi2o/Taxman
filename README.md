@@ -23,7 +23,17 @@ discrepancies, explains, and orchestrates — and every AI conclusion is checked
 | **Synthetic data + evaluation** | 12 coherent demo scenarios with hidden issues; benchmark of detection, evidence, impact accuracy, hallucination | `backend/app/synthetic/`, `backend/app/evaluation/` |
 | **Web app** | Dashboard · My Tax Profile · Documents · Reconciliation · Tax Computation · Issues & Alerts · Ask Astra · Return Review (+ Audit trail, AI Evaluation) | `frontend/` |
 
-## Open it with one click
+## Use it right now (hosted on GitHub Pages)
+
+**https://abhisheksi2o.github.io/Taxman/**
+
+The hosted edition runs the *same* Python tax engine, extraction pipeline, reconciliation, readiness checks and
+deterministic Astra inside your browser (Pyodide / WebAssembly) behind the same API contract as the server. Nothing
+is uploaded anywhere: your workspace lives in the browser's IndexedDB on this device. The first visit downloads
+about 15 MB of runtime; later visits are cached. Astra's Claude-powered mode is server-only, so the hosted edition
+always answers in deterministic mode. It is published by `.github/workflows/pages.yml` on every push.
+
+## Other one-click options
 
 | | |
 |---|---|
@@ -32,7 +42,7 @@ discrepancies, explains, and orchestrates — and every AI conclusion is checked
 
 Both options run the code in this repository unchanged; the only difference is where it runs.
 
-## Quick start
+## Quick start (server edition)
 
 ```bash
 # backend (Python 3.11+)

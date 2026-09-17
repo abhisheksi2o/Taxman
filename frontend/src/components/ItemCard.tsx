@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Api } from "@/lib/api";
 import { dateTime, inr, KIND_LABEL, titleCase } from "@/lib/format";
@@ -7,6 +8,7 @@ import { Alert, Badge, Button, SeverityBadge } from "@/components/ui";
 import { EvidenceList } from "@/components/EvidencePanel";
 
 export function ItemCard({ item, caseId, onChanged, defaultOpen }: { item: any; caseId: string; onChanged: () => void; defaultOpen?: boolean }) {
+  const router = useRouter();
   const [open, setOpen] = useState(!!defaultOpen);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function ItemCard({ item, caseId, onChanged, defaultOpen }: { item: any; 
     setErr(null);
     try {
       const res = await Api.resolve(caseId, item.id, action, payload, note);
-      if (res.navigate) window.location.href = `/${res.navigate}`;
+      if (res.navigate) router.push(`/${res.navigate}`);
       onChanged();
     } catch (e: any) {
       setErr(e.message);

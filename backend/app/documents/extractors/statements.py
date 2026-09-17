@@ -1,13 +1,13 @@
 """Extractors for CSV statements: bank statements, broker / capital-gains statements, dividend statements.
 
-pandas is used for tolerant CSV parsing (header normalisation, numeric coercion)."""
+Parsing uses the standard-library csv module (header normalisation, numeric coercion) so the same code runs
+server-side and inside the browser build."""
 from __future__ import annotations
 
+import csv
 import io
 import re
 from datetime import date
-
-import pandas as pd
 
 from .common import ExtractionResult, mask_account, normalize_key, obs, parse_amount, parse_date
 
@@ -18,10 +18,32 @@ DIVIDEND_PATTERNS = re.compile(r"\b(DIV|DIVIDEND)\b", re.I)
 REFUND_PATTERNS = re.compile(r"\b(ITR REFUND|INCOME TAX REFUND|IT REFUND|ITREF)\b", re.I)
 
 
-def _read_csv(data: str) -> pd.DataFrame:
-    df = pd.read_csv(io.StringIO(data), dtype=str, keep_default_na=False)
-    df.columns = [re.sub(r"[^a-z0-9]+", "_", c.strip().lower()).strip("_") for c in df.columns]
-    return df
+class Frame:
+    """Minimal DataFrame stand-in: normalised column names and string rows."""
+
+    def __init__(self, columns: list[str], rows: list[dict[str, str]]):
+        self.columns = columns
+        self.rows = rows
+
+    def iterrows(self):
+        for i, r in enumerate(self.rows):
+            yield i, r
+
+
+def _read_csv(data: str) -> Frame:
+    reader = csv.reader(io.StringIO(data))
+    try:
+        header = next(reader)
+    except StopIteration:
+        return Frame([], [])
+    cols = [re.sub(r"[^a-z0-9]+", "_", c.strip().lower()).strip("_") for c in header]
+    rows = []
+    for raw in reader:
+        if not any(cell.strip() for cell in raw):
+            continue
+        row = {cols[i]: (raw[i].strip() if i < len(raw) else "") for i in range(len(cols))}
+        rows.append(row)
+    return Frame(cols, rows)
 
 
 def _num(v: str) -> float:
@@ -29,7 +51,7 @@ def _num(v: str) -> float:
     return float(d) if d is not None else 0.0
 
 
-def _col(df: pd.DataFrame, *names: str) -> str | None:
+def _col(df: Frame, *names: str) -> str | None:
     for n in names:
         if n in df.columns:
             return n

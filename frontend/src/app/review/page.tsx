@@ -94,8 +94,8 @@ export default function ReviewPage() {
         </Card>
       )}
       <Card className="mt-4" title="Declarations & confirmation" subtitle="Explicit confirmation is required before a return package is prepared.">
-        {confirmed && !result && <Alert tone="positive" title={`Confirmed ${dateTime(data.review_state.confirmed_at)} · ${data.review_state.selected_regime} regime`}>Package {data.review_state.return_package_id}. <a className="underline" href={`/api/cases/${activeCaseId}/review/package`}>Download return package (JSON)</a> · <button className="underline" onClick={async () => { await Api.resetReview(activeCaseId); setResult(null); reload(); }}>Reopen for changes</button></Alert>}
-        {result && <Alert tone="positive" title="Return package prepared">{result.note} <a className="underline" href={`/api/cases/${activeCaseId}/review/package`}><Download size={12} className="inline" /> Download JSON</a></Alert>}
+        {confirmed && !result && <Alert tone="positive" title={`Confirmed ${dateTime(data.review_state.confirmed_at)} · ${data.review_state.selected_regime} regime`}>Package {data.review_state.return_package_id}. <button className="underline" onClick={() => Api.downloadPackage(activeCaseId)}>Download return package (JSON)</button> · <button className="underline" onClick={async () => { await Api.resetReview(activeCaseId); setResult(null); reload(); }}>Reopen for changes</button></Alert>}
+        {result && <Alert tone="positive" title="Return package prepared">{result.note} <button className="underline" onClick={() => Api.downloadPackage(activeCaseId)}><Download size={12} className="inline" /> Download JSON</button></Alert>}
         {!confirmed && (
           <div className="mt-2 space-y-2">
             {p.declarations.map((d: any) => <label key={d.code} className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1" checked={!!decl[d.code]} onChange={(e) => setDecl({ ...decl, [d.code]: e.target.checked })} />{d.text}</label>)}

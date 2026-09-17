@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import current_user, get_repo, load_case
-from app.api.serializers import case_view, profile_view
+from app.services.views import case_view, profile_view
 from app.core import audit
 from app.core.storage import get_storage
 from app.db.models import User

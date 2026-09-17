@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core import audit
-from app.db.repository import CaseRepository
 from app.models.common import SourceType, TracedValue, ValueStatus, money, utcnow
 from app.models.tax_model import (
     BankAccount,
@@ -26,6 +25,9 @@ from app.models.tax_model import (
 )
 from app.reconciliation.engine import reconcile
 from app.tax_engine.engine import compute
+
+if TYPE_CHECKING:  # the repository is any object with save()/audit(); SQLAlchemy is not imported here
+    from app.db.repository import CaseRepository
 
 
 def tv(value: Any, reference: str = "Entered by taxpayer", status: ValueStatus = ValueStatus.USER_ENTERED) -> TracedValue:
@@ -156,7 +158,7 @@ def refresh(case: TaxCase) -> dict:
     return {"open_items": len([i for i in items if i.status == "OPEN"]), "computation": computation}
 
 
-def commit(repo: CaseRepository, case: TaxCase, user_id: str, actor: str, action: str, summary: str, details: dict | None = None,
+def commit(repo: "CaseRepository", case: TaxCase, user_id: str, actor: str, action: str, summary: str, details: dict | None = None,
            evidence: list[dict] | None = None, refresh_case: bool = True) -> dict:
     status = refresh(case) if refresh_case else {}
     repo.save(case)

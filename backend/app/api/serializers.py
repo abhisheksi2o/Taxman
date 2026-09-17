@@ -1,21 +1,2 @@
-"""API-facing views of the model – PAN is masked, documents never expose raw content."""
-from __future__ import annotations
-
-from app.models.common import mask_pan
-from app.models.tax_model import TaxCase
-
-
-def case_view(case: TaxCase) -> dict:
-    data = case.model_dump(mode="json")
-    data["taxpayer"]["pan_masked"] = mask_pan(case.taxpayer.pan)
-    data["taxpayer"]["pan"] = None
-    for d in data["documents"]:
-        d.pop("storage_key", None)
-    return data
-
-
-def profile_view(case: TaxCase) -> dict:
-    tp = case.taxpayer.model_dump(mode="json")
-    tp["pan_masked"] = mask_pan(case.taxpayer.pan)
-    tp["pan"] = None
-    return tp
+"""Kept for import compatibility – views live in app.services.views (shared with the browser backend)."""
+from app.services.views import case_view, doc_view, profile_view  # noqa: F401
