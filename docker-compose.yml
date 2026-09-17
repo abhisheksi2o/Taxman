@@ -1,0 +1,44 @@
+# Local production-like stack: PostgreSQL + FastAPI backend + Next.js frontend.
+# Copy .env.example to .env and set ASTRA_ENCRYPTION_KEY before `docker compose up`.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: astra
+      POSTGRES_PASSWORD: astra
+      POSTGRES_DB: astra
+    volumes:
+      - astra-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astra"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://astra:astra@db:5432/astra
+      ASTRA_STORAGE_DIR: /data/documents
+      ASTRA_ALLOWED_ORIGINS: http://localhost:3000
+    volumes:
+      - astra-docs:/data/documents
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  astra-db:
+  astra-docs:
